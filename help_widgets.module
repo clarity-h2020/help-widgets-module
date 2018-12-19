@@ -43,7 +43,7 @@ function help_widgets_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $f
 
     if ($formObject instanceof \Drupal\Core\Entity\EntityFormInterface) {
         $entity = $formObject->getEntity();
-        if ($entity->getEntityTypeId() === 'node') {
+        if ($entity->getEntityTypeId() === 'node' || $entity->getEntityTypeId() === 'group') {
             $form['#attached']['library'][] = 'help_widgets/basis';
         }
     }
