@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\help_widgets\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Url;
@@ -90,7 +91,7 @@ class TextfieldWidget extends WidgetBase
         $summary[] = t('Textfield size: @size', [
             '@size' => $this->getSetting('size')
         ]);
-        if (! empty($this->getSetting('placeholder'))) {
+        if (!empty($this->getSetting('placeholder'))) {
             $summary[] = t('Placeholder: @placeholder', [
                 '@placeholder' => $this->getSetting('placeholder')
             ]);
@@ -105,14 +106,16 @@ class TextfieldWidget extends WidgetBase
      */
     public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state)
     {
-        $link = array ();
+        $link = array(); // arrays cannot be used in the #suffix attribute, since it requires pure strings
+        $linkString = "";
 
         if ($this->getSetting('url_help')) {
+            $url = Url::fromUri('internal:' . $this->getSetting('url_help'))->toString();
             $link['link_help'] = [
                 '#title' => $this->t(''),
                 '#type' => 'link',
                 //'#url' => Url::fromRoute('entity.node.canonical', ['node' => $this->getSetting('url_help')]),
-                '#url' => Url::fromUri('internal:' . $this->getSetting('url_help')),
+                '#url' => $url,
                 '#attributes' => array(
                     'class' => array(
                         'contextual-help help-icon use-ajax',
@@ -125,14 +128,18 @@ class TextfieldWidget extends WidgetBase
                     ),
                 ),
             ];
+
+            $linkString .= '<a href="' . $url . '" class="contextual-help help-icon use-ajax"
+                            data-dialog-type="modal" data-dialog-options="{&quot;width&quot;:700}" tabindex="-1"></a>';
         }
 
         if ($this->getSetting('url_example')) {
+            $url = Url::fromUri('internal:' . $this->getSetting('url_example'))->toString();
             $link['link_example'] = [
                 '#title' => $this->t(''),
                 '#type' => 'link',
                 //'#url' => Url::fromRoute('entity.node.canonical', ['node' => $this->getSetting('url_example')]),
-                '#url' => Url::fromUri('internal:' . $this->getSetting('url_example')),
+                '#url' => $url,
                 '#attributes' => array(
                     'class' => array(
                         'contextual-help example-icon use-ajax',
@@ -145,6 +152,9 @@ class TextfieldWidget extends WidgetBase
                     ),
                 ),
             ];
+
+            $linkString .= '<a href="' . $url . '" class="contextual-help example-icon use-ajax"
+                            data-dialog-type="modal" data-dialog-options="{&quot;width&quot;:700}" tabindex="-1"></a>';
         }
 
         $element['value'] = $element + [
@@ -153,8 +163,8 @@ class TextfieldWidget extends WidgetBase
             '#size' => $this->getSetting('size'),
             '#placeholder' => $this->getSetting('placeholder'),
             '#maxlength' => $this->getFieldSetting('max_length'),
-            //'#field_suffix' => '<span> Info: ' . $this->getSetting('url_help') . ' - ' . $this->getSetting('url_example') . '</span>',
-            '#field_suffix' => $link,
+            //'#field_suffix' => $link,
+            '#suffix' => '<span class="field-suffix">' . $linkString . '</span>',
         ];
 
         return $element;
@@ -163,12 +173,13 @@ class TextfieldWidget extends WidgetBase
     /**
      * Check if path exists
      */
-    public static function validate($element, FormStateInterface $form_state) {
+    public static function validate($element, FormStateInterface $form_state)
+    {
         $path = $element['#value'];
         $validator = \Drupal::service('path.validator');
 
         // if path not valid show error message to admin
-        if(!$validator->isValid($path)) {
+        if (!$validator->isValid($path)) {
             $form_state->setError($element, t("The URL doesn't exist. Please fill in a valid URL in the form of /node/1"));
         }
     }

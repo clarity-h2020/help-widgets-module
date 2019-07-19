@@ -1,4 +1,5 @@
 <?php
+
 namespace Drupal\help_widgets\Plugin\Field\FieldWidget;
 
 use Drupal\Core\Url;
@@ -98,7 +99,7 @@ class TextareaWidget extends WidgetBase
             '@rows' => $this->getSetting('rows')
         ]);
         $placeholder = $this->getSetting('placeholder');
-        if (! empty($placeholder)) {
+        if (!empty($placeholder)) {
             $summary[] = t('Placeholder: @placeholder', [
                 '@placeholder' => $placeholder
             ]);
@@ -113,15 +114,16 @@ class TextareaWidget extends WidgetBase
      */
     public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state)
     {
-
-        $link = array ();
+        $link = array(); // arrays cannot be used in the #suffix attribute, since it requires pure strings
+        $linkString = "";
 
         if ($this->getSetting('url_help')) {
+            $url = Url::fromUri('internal:' . $this->getSetting('url_help'))->toString();
             $link['link_help'] = [
                 '#title' => $this->t(''),
                 '#type' => 'link',
                 //'#url' => Url::fromRoute('entity.node.canonical', ['node' => $this->getSetting('url_help')]),
-                '#url' => Url::fromUri('internal:' . $this->getSetting('url_help')),
+                '#url' => $url,
                 '#attributes' => array(
                     'class' => array(
                         'contextual-help help-icon use-ajax',
@@ -135,21 +137,17 @@ class TextareaWidget extends WidgetBase
                 ),
             ];
 
-//             $url = Url::fromUri('internal:' . $this->getSetting('url_help'));
-//             $project_link = Link::fromTextAndUrl(t('Open Project'), $url);
-//             $project_link = $project_link->toRenderable();
-//             // If you need some attributes.
-//             $project_link['#attributes'] = array('class' => array('button', 'button-action', 'button--primary', 'button--small'));
-//             $element['link_help'] = $project_link;
-
+            $linkString .= '<a href="' . $url . '" class="contextual-help help-icon use-ajax"
+                            data-dialog-type="modal" data-dialog-options="{&quot;width&quot;:700}" tabindex="-1"></a>';
         }
 
         if ($this->getSetting('url_example')) {
+            $url = Url::fromUri('internal:' . $this->getSetting('url_example'))->toString();
             $link['link_example'] = [
                 '#title' => $this->t(''),
                 '#type' => 'link',
                 //'#url' => Url::fromRoute('entity.node.canonical', ['node' => $this->getSetting('url_example')]),
-                '#url' => Url::fromUri('internal:' . $this->getSetting('url_example')),
+                '#url' => $url,
                 '#attributes' => array(
                     'class' => array(
                         'contextual-help example-icon use-ajax',
@@ -162,6 +160,9 @@ class TextareaWidget extends WidgetBase
                     ),
                 ),
             ];
+
+            $linkString .= '<a href="' . $url . '" class="contextual-help example-icon use-ajax"
+                            data-dialog-type="modal" data-dialog-options="{&quot;width&quot;:700}" tabindex="-1"></a>';
         }
 
         $element['value'] = $element + [
@@ -169,10 +170,8 @@ class TextareaWidget extends WidgetBase
             '#default_value' => $items[$delta]->value,
             '#rows' => $this->getSetting('rows'),
             '#placeholder' => $this->getSetting('placeholder'),
-//             '#field_suffix' => array(
-//                 $link['link_help'], $link['link_example']
-//             ),
-            '#field_suffix' => $link,
+            //'#field_suffix' => "#field_suffix for textarea (KEEP THIS)", // #field_suffix is somehow removed in ajax-calls -> use #suffix instead
+            '#suffix' => '<span class="field-suffix">' . $linkString . '</span>',
             '#attributes' => [
                 'class' => [
                     'js-text-full',
@@ -187,12 +186,13 @@ class TextareaWidget extends WidgetBase
     /**
      * Check if path exists
      */
-    public static function validate($element, FormStateInterface $form_state) {
+    public static function validate($element, FormStateInterface $form_state)
+    {
         $path = $element['#value'];
         $validator = \Drupal::service('path.validator');
 
         // if path not valid show error message to admin
-        if(!$validator->isValid($path)) {
+        if (!$validator->isValid($path)) {
             $form_state->setError($element, t("The URL doesn't exist. Please fill in a valid URL in the form of /node/1"));
         }
     }
